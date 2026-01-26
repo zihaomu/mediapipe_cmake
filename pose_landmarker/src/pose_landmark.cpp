@@ -32,13 +32,18 @@ PoseLandmarker::PoseLandmarker(std::string detectorPath, std::string landmarkPat
     poseDetector = makePtr<PoseDetector>(detectorPath, maxHumanNum, device);
     poseLanmark_impl = makePtr<PoseLandmarker_Impl>(landmarkPath, device);
 
-    smoother = makePtr<OneEuroSmoother>(0.01f, 80.f);
+    // Tuned for smooth pose tracking: mincutoff=0.01 (base smoothing), beta=20 (less sensitive)
+    smoother_xy = makePtr<OneEuroSmoother>(0.01f, 20.f);
+    // Z-axis needs stronger smoothing due to depth jitter
+    smoother_z = makePtr<OneEuroSmoother>(0.05f, 5.f);
+
 }
 
 PoseLandmarker::PoseLandmarker(int _maxHumanNum, int _device)
         : maxHumanNum(_maxHumanNum), device(_device)
 {
-    smoother = makePtr<OneEuroSmoother>(0.01f, 80.f);
+    smoother_xy = makePtr<OneEuroSmoother>(0.01f, 20.f);
+    smoother_z = makePtr<OneEuroSmoother>(0.05f, 5.f);
 }
 
 void PoseLandmarker::loadDetectModel(std::string detector_path, int _device)
@@ -53,17 +58,19 @@ void PoseLandmarker::loadLandmarkModel(std::string landmark_path, int _device)
     poseLanmark_impl = makePtr<PoseLandmarker_Impl>(landmark_path, device);
 }
 
-void PoseLandmarker::loadDetectModel(const char *buffer, long buffer_size, bool _isTFlite, int _device)
+void PoseLandmarker::loadDetectModel(const char *buffer, long buffer_size, std::string model_suffix, int _device)
 {
+    CV_Assert(model_suffix == "tflite" || model_suffix == "mnn");
     device = _device;
-    isTFlite = _isTFlite;
+    isTFlite = model_suffix == "tflite";
     poseDetector = makePtr<PoseDetector>(buffer, buffer_size, isTFlite,  maxHumanNum, device);
 }
 
-void PoseLandmarker::loadLandmarkModel(const char *buffer, long buffer_size, bool _isTFlite, int _device)
+void PoseLandmarker::loadLandmarkModel(const char *buffer, long buffer_size, std::string model_suffix, int _device)
 {
+    CV_Assert(model_suffix == "tflite" || model_suffix == "mnn");
     device = _device;
-    isTFlite = _isTFlite;
+    isTFlite = model_suffix == "tflite";
     poseLanmark_impl = makePtr<PoseLandmarker_Impl>(buffer, buffer_size, isTFlite, device);
 }
 
@@ -188,16 +195,35 @@ void PoseLandmarker::runVideo(const cv::Mat &img, std::vector<BoxKp3> &boxLandma
             int64_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
                     std::chrono::high_resolution_clock::now().time_since_epoch())
                     .count();
+            
+            // split xy and z to two vector, and smoother their independently
 
-            smoother->apply(boxLandmark[0].points, timestamp, landmarkSmoothed);
-            boxLandmark[0].points = landmarkSmoothed;
+            PointList2f landmark_xy, landmark_xy_smoothed;
+            std::vector<float> landmark_z, landmark_z_smoothed;
+            for (int j = 0; j < boxLandmark[0].points.size(); j++)
+            {
+                landmark_xy.push_back(cv::Point2f(boxLandmark[0].points[j].x, boxLandmark[0].points[j].y));
+                landmark_z.push_back(boxLandmark[0].points[j].z);
+            }
+
+            smoother_xy->apply(landmark_xy, timestamp, landmark_xy_smoothed);
+            smoother_z->apply(landmark_z, timestamp, landmark_z_smoothed);
+
+            // merge xy and z back
+            for (int j = 0; j < boxLandmark[0].points.size(); j++)
+            {
+                boxLandmark[0].points[j].x = landmark_xy_smoothed[j].x;
+                boxLandmark[0].points[j].y = landmark_xy_smoothed[j].y;
+                boxLandmark[0].points[j].z = landmark_z_smoothed[j];
+            }
         }
 
         preBoxPoints = boxLandmark;
     }
     else
     {
-        smoother->reset();
+        smoother_xy->reset();
+        smoother_z->reset();
         preBoxPoints.clear();
     }
 

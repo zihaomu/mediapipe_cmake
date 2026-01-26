@@ -137,6 +137,15 @@ void LowPassSmoother::reset()
 }
 
 // >>>>>>>>>>>>>>>>>>>>> OneEuroSmoother <<<<<<<<<<<<<<<<<<<<<<<<<
+
+void OneEuroSmoother::apply(const std::vector<float>& point, std::vector<float> &pointOut)
+{
+    int64_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::high_resolution_clock::now().time_since_epoch())
+                .count();
+    apply(point, timestamp, pointOut);
+}
+    
 void OneEuroSmoother::apply(const std::vector<float>& point, int64_t timestamp, std::vector<float> &pointOut)
 {
     if (dx_prev_hat.empty())
@@ -163,6 +172,14 @@ void OneEuroSmoother::apply(const std::vector<float>& point, int64_t timestamp, 
         }
     }
     last_timestamp = timestamp;
+}
+
+void OneEuroSmoother::apply(const PointList2f& point, PointList2f &pointOut)
+{
+    int64_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::high_resolution_clock::now().time_since_epoch())
+                .count();
+    apply(point, timestamp, pointOut);
 }
 
 void OneEuroSmoother::apply(const PointList2f& point, int64_t timestamp, PointList2f &pointOut)
@@ -192,6 +209,14 @@ void OneEuroSmoother::apply(const PointList2f& point, int64_t timestamp, PointLi
         }
     }
     last_timestamp = timestamp;
+}
+
+void OneEuroSmoother::apply(const PointList3f& point, PointList3f &pointOut)
+{
+    int64_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::high_resolution_clock::now().time_since_epoch())
+                .count();
+    apply(point, timestamp, pointOut);
 }
 
 void OneEuroSmoother::apply(const PointList3f& point, int64_t timestamp, PointList3f &pointOut)

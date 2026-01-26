@@ -1,117 +1,102 @@
-//
-// Created by mzh on 2023/10/11.
-//
 #include <opencv2/opencv.hpp>
-#include "opencv2/core/hal/intrin.hpp"
 #include "interactive_segmenter.h"
 
 using namespace mpp;
 using namespace cv;
+using namespace std;
 
-cv::Mat image;
+cv::Mat image;        // Original image
+cv::Mat display;      // Display image
 bool drawing = false;
 cv::Point prevPoint;
-
 bool runSeg = false;
 
-InterativeSegmenter segmenter("/Users/moo/work/my_project/mediapipe_cmake2/mediapipe_cmake/interactive_segmenter/models/magic_touch.mnn");
+const string root_path = "/home/moo/work/my_lab/mpp_project/mediapiep_cmake_private/";
+InterativeSegmenter segmenter(
+    root_path + "interactive_segmenter/models/magic_touch.mnn"
+);
 
-std::vector<cv::Point> mouseClick;
+vector<cv::Point> mouseClick;
 
-void onMouse(int event, int x, int y, int flags, void* userdata) {
-    if (runSeg == false)
-    {
-        if (event == cv::EVENT_LBUTTONDOWN) {
-            drawing = true;
-            prevPoint = cv::Point(x, y);
-            cv::circle(image, prevPoint, 2, cv::Scalar(0, 0, 255));
-            cv::imshow("Image", image);
-            mouseClick.push_back(prevPoint);
-        }
-        else if (event == cv::EVENT_MOUSEMOVE && drawing) {
-            cv::Point currentPoint(x, y);
-            cv::line(image, prevPoint, currentPoint, cv::Scalar(0, 0, 255), 2);
-            prevPoint = currentPoint;
-            cv::imshow("Image", image);
-            mouseClick.push_back(prevPoint);
-        }
-        else if (event == cv::EVENT_LBUTTONUP) {
-            drawing = false;
-            runSeg = true;
-//            for (int i = 0; i < mouseClick.size(); i++)
-//            {
-//                std::cout<<mouseClick[i]<<std::endl;
-//            }
-        }
-    }
+void drawHint(cv::Mat& img)
+{
+    const std::string hint = "c: clear   esc: quit";
+    int font = cv::FONT_HERSHEY_SIMPLEX;
+    double scale = 0.6;
+    int thickness = 1;
+
+    // Green outline
+    cv::putText(img, hint, cv::Point(11, 31),
+                font, scale, cv::Scalar(0, 255, 0), thickness, cv::LINE_AA);
+    // Bright green text
+    cv::putText(img, hint, cv::Point(10, 30),
+                font, scale, cv::Scalar(0, 255, 0), thickness, cv::LINE_AA);
 }
 
-//[423, 271]
-void test()
+void onMouse(int event, int x, int y, int, void*)
 {
-    image = cv::imread("/Users/mzh/work/my_project/mediapipe_cmake/data/body_image/test3.jpeg");
-//    dnn::printMatShape(image);
-//    resize(image, image, {512, 512});
-//    image.resize((512, 512));
-    cv::Mat mask;
-    cv::Mat out;
+    if (runSeg) return;
 
-//    std::vector<cv::Point> mouseClick2 = {cv::Point(337, 337)};
-    std::vector<cv::Point> mouseClick2 = {cv::Point(423, 271)};
-//    std::vector<cv::Point> mouseClick2 = {cv::Point(214, 216)};
-//    [214, 216]
-
-    segmenter.pointsToAlpha(image, mouseClick2, mask);
-    cv::imshow("mask", mask);
-    cv::waitKey(0);
-    segmenter.run(image, mouseClick2, out);
-
-    cv::imshow("maskOut", out);
-
-    cv::waitKey(0);
-    runSeg = false;
+    if (event == EVENT_LBUTTONDOWN) {
+        drawing = true;
+        prevPoint = Point(x, y);
+        mouseClick.push_back(prevPoint);
+        circle(display, prevPoint, 2, Scalar(0, 0, 255), -1);
+        imshow("Image", display);
+    }
+    else if (event == EVENT_MOUSEMOVE && drawing) {
+        Point current(x, y);
+        line(display, prevPoint, current, Scalar(0, 0, 255), 2);
+        prevPoint = current;
+        mouseClick.push_back(prevPoint);
+        imshow("Image", display);
+    }
+    else if (event == EVENT_LBUTTONUP) {
+        drawing = false;
+        runSeg = true;
+    }
 }
 
 int main()
 {
-//    test();
+    image = imread(root_path + "data/body_image/test3.jpeg");
 
-    // Load an image
-    image = cv::imread("/Users/moo/work/my_project/mediapipe_cmake2/mediapipe_cmake/data/body_image/test3.jpeg");
-//    image = cv::imread("/Users/mzh/work/github/mediapipe_commont/mediapipe/tasks/testdata/vision/cats_and_dogs.jpg");
-
-
-//    resize(image, image, {512, 512});
-    if (image.empty())
-    {
-        std::cerr << "Error: Image not found." << std::endl;
+    
+    if (image.empty()) {
+        cerr << "Error: Image not found." << endl;
         return -1;
     }
 
-    cv::imshow("Image", image);
-    cv::setMouseCallback("Image", onMouse, reinterpret_cast<void*>(&image));
+    display = image.clone();
+    drawHint(display);
+    
+    namedWindow("Image", WINDOW_AUTOSIZE);
+    imshow("Image", display);
+    setMouseCallback("Image", onMouse);
 
     while (true)
     {
-        cv::Mat out;
         if (runSeg)
         {
-            cv::Mat mask;
-            segmenter.pointsToAlpha(image, mouseClick, mask);
+            Mat out;
             segmenter.run(image, mouseClick, out);
-
-            cv::imshow("maskOut", out);
+            imshow("maskOut", out);
             runSeg = false;
         }
-        // TODO drawing the out.
 
-        int key = cv::waitKey(1);
-        if (key == 27)  // 27 is the ASCII code for the 'ESC' key
-            break;
+        int key = waitKey(1);
+        if (key == 27) break;  // ESC
+
+        if (key == 'c' || key == 'C') {
+            display = image.clone();
+            mouseClick.clear();
+            drawing = false;
+            runSeg = false;
+            drawHint(display);
+            imshow("Image", display);
+        }
     }
 
-//    cv::imwrite("output.jpg", image); // Save the edited image
-    cv::destroyAllWindows();
-
+    destroyAllWindows();
     return 0;
 }

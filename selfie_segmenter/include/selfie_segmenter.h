@@ -40,8 +40,9 @@ public:
     /// Override construct function, try to create instance from memory buffer.
     /// \param buffer
     /// \param buffer_size
+    /// \param model_suffix only support tflite now.
     /// \param device
-    SelfieSegmenter(const char* buffer, long buffer_size, int device = 0);
+    SelfieSegmenter(const char* buffer, long buffer_size, std::string model_suffix, int device = 0);
 
     ~SelfieSegmenter();
 

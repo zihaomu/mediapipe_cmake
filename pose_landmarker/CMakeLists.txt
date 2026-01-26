@@ -13,11 +13,10 @@ include_directories(
 file(GLOB SRC
         ${SUB_DIR}/src/*.cpp
         ${CMAKE_SOURCE_DIR}/pose_detector/src/*.cpp # TODO remove this code!
-        ${SUB_DIR}/interface/*.cpp
         ${CMAKE_SOURCE_DIR}/utils/*.cpp
         )
 
-add_library(vision_pose_landmarker SHARED ${SRC} ${SUB_DIR}/interface/pose_landmark.def)
+add_library(vision_pose_landmarker SHARED ${SRC} ${SUB_DIR}/src/pose_landmark.def)
 
 target_link_libraries(vision_pose_landmarker
 #        ${vision_pose_detector}

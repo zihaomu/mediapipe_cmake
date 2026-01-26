@@ -27,12 +27,17 @@ void draw(const Mat& img, const std::vector<BoxKp2>& box)
     }
 }
 
+// ROOT PATH and test data
+std::string root_path = "/home/moo/work/my_lab/mpp_project/mediapiep_cmake_private/";
+std::string test_data_path = root_path + "data/";
+
+
 void test_image()
 {
-    string imgPath = "/Users/mzh/work/opencv_dev/mediapipe_reproduce/data/hand_image/palm_hands.jpeg";
+    string imgPath = test_data_path + "hand_image/palm_hands.jpeg";
     Mat img = imread(imgPath);
 
-    string modelPath = "/Users/mzh/work/opencv_dev/mediapipe_cmake/hand_detector/models/palm_detection_full.mnn";
+    string modelPath = root_path + "hand_detector/models/palm_detection_full.mnn";
     HandDetector detector(modelPath);
 
     std::vector<BoxKp2> boxOut = {};
@@ -45,7 +50,7 @@ void test_image()
 
 void test_camera()
 {
-    string modelPath = "/Users/mzh/work/my_project/mediapipe_cmake/hand_detector/models/palm_detection_full.mnn";
+    string modelPath = root_path + "hand_detector/models/palm_detection_full.mnn";
     HandDetector detector(modelPath);
 
     VideoCapture cap(0);

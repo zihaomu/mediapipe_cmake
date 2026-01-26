@@ -77,12 +77,16 @@ public:
     /// \param timestamp the timestamp should be the microsecond.
     /// \param output output data
     void apply(const std::vector<float>& input, int64_t timestamp, std::vector<float> &output);
+    // overload for vector.
+    void apply(const std::vector<float>& input, std::vector<float> &output);
 
     // overload for 2D point.
     void apply(const std::vector<cv::Point2f>& input, int64_t timestamp, std::vector<cv::Point2f> &output);
+    void apply(const std::vector<cv::Point2f>& input, std::vector<cv::Point2f> &output);
 
     // overload for 3D point.
     void apply(const std::vector<cv::Point3f>& input, int64_t timestamp, std::vector<cv::Point3f> &output);
+    void apply(const std::vector<cv::Point3f>& input, std::vector<cv::Point3f> &output);
 
 private:
     cv::Point2f applyImpl(const cv::Point2f& x_cur, const cv::Point2f& x_pre, const int loc);

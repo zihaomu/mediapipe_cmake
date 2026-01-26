@@ -38,6 +38,16 @@ FaceLandmarker::FaceLandmarker(int _maxFaceNum, int _device)
     smoother = makePtr<OneEuroSmoother>(0.05f, 30.f); // TODO: fine tune this params.
 }
 
+void FaceLandmarker::setDevice(int deviceId)
+{
+    device = deviceId;
+}
+
+int FaceLandmarker::getDevice() const
+{
+    return device;
+}
+
 void FaceLandmarker::loadDetectModel(std::string detector_path)
 {
     faceDetector = makePtr<FaceDetector>(detector_path, maxFaceNum, device);
@@ -48,14 +58,14 @@ void FaceLandmarker::loadLandmarkModel(std::string landmark_path)
     faceLanmark_impl = makePtr<FaceLandmarker_Impl>(landmark_path, device);
 }
 
-void FaceLandmarker::loadDetectModel(const char *buffer, long buffer_size)
+void FaceLandmarker::loadDetectModel(const char *buffer, long buffer_size, std::string model_suffix)
 {
-    faceDetector = makePtr<FaceDetector>(buffer, buffer_size, maxFaceNum, device);
+    faceDetector = makePtr<FaceDetector>(buffer, buffer_size, model_suffix, maxFaceNum, device);
 }
 
-void FaceLandmarker::loadLandmarkModel(const char *buffer, long buffer_size)
+void FaceLandmarker::loadLandmarkModel(const char *buffer, long buffer_size, std::string model_suffix)
 {
-    faceLanmark_impl = makePtr<FaceLandmarker_Impl>(buffer, buffer_size, device);
+    faceLanmark_impl = makePtr<FaceLandmarker_Impl>(buffer, buffer_size, model_suffix, device);
 }
 
 FaceLandmarker::~FaceLandmarker()
@@ -151,6 +161,7 @@ void FaceLandmarker::runImage(const cv::Mat &img, std::vector<BoxKp3> &boxLandma
 
         BoxKp3 boxKp3;
         boxKp3.rect = boxes[i].rect;
+        boxKp3.radians = angles[i];
         boxKp3.score = boxes[i].score;
         boxKp3.points = landmarkProjected;
 
@@ -197,6 +208,7 @@ void FaceLandmarker::runVideo(const cv::Mat &img, std::vector<BoxKp3> &boxLandma
 
         BoxKp3 boxKp3;
         boxKp3.rect = boxes[i].rect;
+        boxKp3.radians = angles[i];
         boxKp3.score = boxes[i].score;
         boxKp3.points = landmarkProjected;
 
@@ -288,6 +300,13 @@ void FaceLandmarker::runTrack(const cv::Mat &img, std::vector<BoxKp2> &boxes, st
     {
         runDetect(img, boxes, angles);
     }
+}
+
+int FaceLandmarker::getLandmarkSize()
+{
+    if (!faceLanmark_impl)
+        return 0;
+    return faceLanmark_impl->getLandmarkSize();
 }
 
 }

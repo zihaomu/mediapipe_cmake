@@ -40,8 +40,9 @@ public:
     /// Override construct function, try to create instance from memory buffer.
     /// \param buffer
     /// \param buffer_size
+    /// \param model_suffix only support .MNN now.
     /// \param device
-    InterativeSegmenter(const char* buffer, long buffer_size, int device = 0);
+    InterativeSegmenter(const char* buffer, long buffer_size, std::string model_suffix, int device = 0);
 
     ~InterativeSegmenter();
 

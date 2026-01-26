@@ -47,9 +47,10 @@ FaceDetector::FaceDetector(std::string modelPath, int _maxHandNum, int _device)
     this->init();
 }
 
-FaceDetector::FaceDetector(const char *buffer, long buffer_size, bool _isTFlite, int _maxHandNum, int _device)
-: maxHandNum(_maxHandNum), device(_device), isTFlite(_isTFlite)
+FaceDetector::FaceDetector(const char *buffer, long buffer_size, std::string model_suffix, int _maxHandNum, int _device)
+: maxHandNum(_maxHandNum), device(_device), isTFlite(model_suffix == "tflite")
 {
+    CV_Assert(model_suffix == "tflite" || model_suffix == "mnn");
     // TODO Add the different inference type.
     if (isTFlite)
     {

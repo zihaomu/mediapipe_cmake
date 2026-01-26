@@ -68,10 +68,10 @@ public:
     // create instance with late model loading.
     HandLandmarker(int maxHandNum, int device = 0);
     void loadDetectModel(std::string detector_path);
-    void loadDetectModel(const char* buffer, long buffer_size);
+    void loadDetectModel(const char* buffer, long buffer_size, std::string model_suffix);
 
     void loadLandmarkModel(std::string landmark_path);
-    void loadLandmarkModel(const char* buffer, long buffer_size);
+    void loadLandmarkModel(const char* buffer, long buffer_size, std::string model_suffix);
 
     ~HandLandmarker();
 

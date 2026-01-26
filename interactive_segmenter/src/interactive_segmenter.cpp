@@ -40,9 +40,10 @@ InterativeSegmenter::InterativeSegmenter(std::string modelPath, int _device)
     this->init();
 }
 
-InterativeSegmenter::InterativeSegmenter(const char* buffer, long buffer_size, int _device)
+InterativeSegmenter::InterativeSegmenter(const char* buffer, long buffer_size, std::string model_suffix, int _device)
 : device(_device)
 {
+    CV_Assert(model_suffix == "mnn");
     netSegmenter = makePtr<dnn::Net>(dnn::readNetFromMNN(buffer, buffer_size));
     this->init();
 }
@@ -80,10 +81,10 @@ void InterativeSegmenter::run(const cv::Mat &input, std::vector<cv::Point> &poin
     netSegmenter->setInput(blob);
 
     output = netSegmenter->forward();
-    Mat maskOut = Mat(inputHeight, inputHeight, CV_32FC1, output.data);
+    Mat maskOut = Mat(inputHeight, inputHeight, CV_32FC1, output.data).clone();
 
     // resize back to raw image.
-    resize(maskOut, output, input.size());
+    resize(maskOut, output, Size(input.cols, input.rows), 0, 0, INTER_LINEAR);
 }
 
 void InterativeSegmenter::setAlpha(const cv::Mat &input, const cv::Mat &mask, cv::Mat &out)
@@ -108,7 +109,7 @@ void InterativeSegmenter::setAlpha(const cv::Mat &input, const cv::Mat &mask, cv
        matChannels.push_back(mask);
     }
     else
-       matChannels[3] = mask;
+        matChannels.push_back(mask);
 
     merge(matChannels, out);
 }

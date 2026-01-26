@@ -39,8 +39,9 @@ public:
     /// Override construct function, try to create instance from memory buffer.
     /// \param buffer
     /// \param buffer_size
+    /// \param model_suffix only tflite supported
     /// \param device
-    HairSegmenter(const char* buffer, long buffer_size, int device = 0);
+    HairSegmenter(const char* buffer, long buffer_size, std::string model_suffix, int device = 0);
 
     ~HairSegmenter();
 

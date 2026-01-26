@@ -34,6 +34,7 @@ public:
 
     /// Construct the FaceLandmarker instance.
     /// NOTE: there are two version face_landmark model from mediapipe.
+    /// the name has "with_attetion" suffix will output 478 face landmarks while w/o such suffix will output 468 points.
     /// This class will automatically switch the two different model, don't worry about the postprocessing difference.
     /// \param detector_path the face detect model path
     /// \param landmark_path the face landmark model path
@@ -43,11 +44,16 @@ public:
 
     FaceLandmarker(int maxFaceNum = 1, int device = 0);
 
+    void setDevice(int deviceId);
+    int getDevice() const;
+
     void loadDetectModel(std::string detector_path);
-    void loadDetectModel(const char* buffer, long buffer_size);
+    // Only mnn model supported
+    void loadDetectModel(const char* buffer, long buffer_size, std::string model_suffix);
 
     void loadLandmarkModel(std::string landmark_path);
-    void loadLandmarkModel(const char* buffer, long buffer_size);
+    // Only mnn model supported
+    void loadLandmarkModel(const char* buffer, long buffer_size, std::string model_suffix);
 
     ~FaceLandmarker();
 
@@ -63,6 +69,9 @@ public:
     /// \param img the input image, frame by frame.
     /// \param boxLandmark face landmark and the face bonding box.
     void runVideo(const cv::Mat& img, std::vector<BoxKp3>& boxLandmark);
+
+    /// Return landmark dimension (468 or 478 depending on model variant). Returns 0 if landmark model is not loaded.
+    int getLandmarkSize();
 
 private:
     int maxFaceNum;

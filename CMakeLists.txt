@@ -9,11 +9,10 @@ if (BUILD_DEMO)
 else ()
     message(STATUS "BUILD_DEMO is OFF")
 endif ()
+
 # set OpenCV_lite build DIR
-# TODO change the opencv_lite name from OpenCV to OpenCVLite.
-# The opencv_lite version can be found at https://github.com/zihaomu/opencv_lite.
-# Please make sure you have compiled opencv_lite with MNN dnn backend.
-set(OpenCV_DIR "/Users/moo/work/my_project/opencv_lite/build") # for android platform, please check the following tutorial.
+# NOTE: please set the OpenCV_DIR to the opencv_lite build directory
+set(OpenCV_DIR "/home/mpp_project/opencv_lite/build") # change to your opencv_lite build directory
 
 # for android platform, we need assign the platform based lib, at leaset the "arm64-v8a" and "armeabi-v7a"
 # Please orgnize the folder like the following:
@@ -22,7 +21,6 @@ set(OpenCV_DIR "/Users/moo/work/my_project/opencv_lite/build") # for android pla
 #   - armeabi-v7a, it should contains: libMNN.so libopencv_core.so libopencv_dnn.so libopencv_imgproc.so
 #   - include/opencv2
 if (ANDROID)
-    set(OpenCV_DIR "/Users/mzh/work/my_project/opencv_lite_release/android_26")
     include_directories("${OpenCV_DIR}/include")
     set(OpenCV_DIR_Android "")
     if (ANDROID_ABI STREQUAL "arm64-v8a")
@@ -94,3 +92,4 @@ include(${CMAKE_SOURCE_DIR}/iris_tracker/CMakeLists.txt)
 
 #mpp_vision holistic tracker
 include(${CMAKE_SOURCE_DIR}/holistic_tracker/CMakeLists.txt)
+

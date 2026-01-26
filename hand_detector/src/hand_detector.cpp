@@ -34,9 +34,10 @@ HandDetector::HandDetector(std::string modelPath, int _maxHandNum, int _device)
     this->init();
 }
 
-HandDetector::HandDetector(const char* buffer, long buffer_size, int _maxHandNum, int _device)
+HandDetector::HandDetector(const char* buffer, long buffer_size, std::string model_suffix, int _maxHandNum, int _device)
         : maxHandNum(_maxHandNum), device(_device)
 {
+    CV_Assert(model_suffix == "mnn");
     // Load MNN model by opencv from buffer.
     netHandDet = makePtr<dnn::Net>(dnn::readNetFromMNN(buffer, buffer_size));
     this->init();

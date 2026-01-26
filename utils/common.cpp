@@ -13,6 +13,13 @@ float normalizeRadius(float r)
 }
 
 void resizeUnscale(const cv::Mat &mat, cv::Mat &mat_rs,
+                   int target_width, int target_height)
+{
+    ImgScaleParams params;
+    resizeUnscale(mat, mat_rs, target_width, target_height, params);
+}
+
+void resizeUnscale(const cv::Mat &mat, cv::Mat &mat_rs,
                    int target_width, int target_height, ImgScaleParams& params)
 {
     if (mat.empty()) return;

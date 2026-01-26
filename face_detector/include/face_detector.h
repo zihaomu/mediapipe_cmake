@@ -31,7 +31,7 @@ class FaceDetector
 {
 public:
     FaceDetector(std::string modelPath, int maxFaceNum = -1, int device = 0);
-    FaceDetector(const char *buffer, long buffer_size, bool isTFlite = false, int maxFaceNum = -1, int device = 0);
+    FaceDetector(const char *buffer, long buffer_size, std::string model_suffix, int maxFaceNum = -1, int device = 0);
     ~FaceDetector();
 
     void run(const cv::Mat& img, std::vector<BoxKp2>& rects);
@@ -43,7 +43,7 @@ private:
     int maxHandNum;
     int device;
 
-    bool isTFlite;
+    bool isTFlite;  // 默认是MNN模型
 
     const int input_size_short = 128;
     const int input_size_full = 192;

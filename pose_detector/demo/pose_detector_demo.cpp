@@ -27,12 +27,15 @@ void draw(const Mat& img, const std::vector<BoxKp2>& box)
     }
 }
 
+const string root_path = "/Users/moo/work/my_project/mediapipe_cmake2/mediapipe_cmake/";
+const string data_path = root_path + "data/body_image/";
+
 void test_image()
 {
-    string imgPath = "/Users/mzh/work/opencv_dev/mediapipe_reproduce/data/body_image/test3.jpeg";
+    string imgPath = data_path + "test3.jpeg";
     Mat img = imread(imgPath);
 
-    string modelPath = "/Users/mzh/work/opencv_dev/mediapipe_reproduce/pose_detector/models/pose_detection.mnn";
+    string modelPath = root_path + "pose_detector/models/pose_detection.mnn";
     PoseDetector detector(modelPath);
 
     std::vector<BoxKp2> boxOut = {};
@@ -46,12 +49,10 @@ void test_image()
 void test_camera()
 {
 
-    string modelPath = "/Users/mzh/work/my_project/mediapipe_cmake/pose_detector/models/pose_detection.mnn";
-//    string modelPath = "/Users/mzh/work/my_project/mediapipe_cmake/pose_detector/models/pose_detection.tflite";
+    string modelPath = root_path + "pose_detector/models/pose_detection.mnn";
     PoseDetector detector(modelPath);
 
-    VideoCapture cap("/Users/mzh/work/data/video/v0.mp4");
-//    VideoCapture cap(0);
+    VideoCapture cap(root_path + "data/video/v0.mp4");
     TickMeter t;
     Mat frame;
     while (1)

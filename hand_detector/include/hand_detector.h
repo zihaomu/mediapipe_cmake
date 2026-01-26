@@ -36,9 +36,10 @@ public:
     /// Override of loading model from buffer.
     /// \param buffer memory buffer pointer.
     /// \param buffer_size buffer size
+    /// \param model_suffix NOTE: only mnn supported
     /// \param maxHandNum -1 means return all hands that have been detected.
     /// \param device default 0
-    HandDetector(const char* buffer, long buffer_size, int maxHandNum = -1, int device = 0);
+    HandDetector(const char* buffer, long buffer_size, std::string model_suffix, int maxHandNum = -1, int device = 0);
     ~HandDetector();
 
     void run(const cv::Mat& img, std::vector<BoxKp2>& rects);

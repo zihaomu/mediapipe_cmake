@@ -25,3 +25,6 @@ target_link_libraries(vision_hand_landmarker
 
 add_executable(demo_handlandmarker ${SUB_DIR}/demo/hand_landmark_demo.cpp)
 target_link_libraries(demo_handlandmarker vision_hand_landmarker)
+
+add_executable(demo_hand_c_api ${SUB_DIR}/demo/hand_landmark_c_api_demo.cpp)
+target_link_libraries(demo_hand_c_api vision_hand_landmarker)

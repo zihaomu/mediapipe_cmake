@@ -30,9 +30,10 @@ HairSegmenter::HairSegmenter(std::string modelPath, int _device)
     this->init();
 }
 
-HairSegmenter::HairSegmenter(const char* buffer, long buffer_size, int _device)
+HairSegmenter::HairSegmenter(const char* buffer, long buffer_size, std::string model_suffix, int _device)
 : device(_device)
 {
+    CV_Assert(model_suffix == "tflite");
     netSegmenter = makePtr<dnn::Net>(dnn::readNetFromTflite(buffer, buffer_size));
     this->init();
 }

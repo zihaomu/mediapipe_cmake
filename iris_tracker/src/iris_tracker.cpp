@@ -23,19 +23,6 @@ using namespace cv;
 namespace mpp
 {
 
-void draw_debug(const Mat& img, const PointList3f& points)
-{
-    int w = img.cols;
-    int h = img.rows;
-
-    for (int k = 0; k < points.size(); k++)
-    {
-        std::string scoreText = std::to_string(k);
-        auto p = Point2f(points[k].x, points[k].y);
-//            putText(img, scoreText, p, 2, 1, cv::Scalar(0, 255, 0));
-        circle(img, p, 0.5, Scalar(255, 0, 255), 2);
-    }
-}
 
 IrisTracker::IrisTracker(std::string iris_landmark_path, std::string face_detect_path,
                          std::string face_landmark_path, int _device)
@@ -43,6 +30,11 @@ IrisTracker::IrisTracker(std::string iris_landmark_path, std::string face_detect
 {
     irisLandmarker_impl = makePtr<IrisLandmarker_Impl>(iris_landmark_path, device);
     faceLandmarker = makePtr<FaceLandmarker>(face_detect_path, face_landmark_path, 1, device);
+
+    leftEyeSmootherIris = makePtr<OneEuroSmoother>(0.05f, 30.f);
+    leftEyeSmootherEye = makePtr<OneEuroSmoother>(0.05f, 30.f);
+    rightEyeSmootherIris = makePtr<OneEuroSmoother>(0.05f, 30.f);
+    rightEyeSmootherEye = makePtr<OneEuroSmoother>(0.05f, 30.f);
 }
 
 IrisTracker::~IrisTracker()
@@ -82,6 +74,23 @@ inline void flipLandmark(float imgW, PointList3f& landmarkIris, PointList3f& lan
     }
 }
 
+// if box is out of image, set roi to 0
+inline bool checkRect(Rect2f& rect, int imgW, int imgH)
+{
+    cv::Rect imageRect(0, 0, imgW, imgH);
+    cv::Rect intersect(imageRect & cv::Rect(rect));
+
+    float overlap_ratio = static_cast<double>(intersect.area()) / static_cast<double>(rect.area());
+    
+    // if more than 20% of rect is out of image, set rect to 0
+    if (overlap_ratio < 0.2)
+    {
+        rect = Rect2f(0, 0, 0, 0);
+        return false;
+    }
+    return true;
+}
+
 void IrisTracker::runImage(const cv::Mat &input, std::vector<IrisOutput> &output)
 {
     CV_Assert(!input.empty());
@@ -102,35 +111,43 @@ void IrisTracker::runImage(const cv::Mat &input, std::vector<IrisOutput> &output
     leftEyeRoi = scaleRect(leftEyeRoi, imgW, imgH, scaleFactorEyeRoi, true);
     rightEyeRoi = scaleRect(rightEyeRoi, imgW, imgH, scaleFactorEyeRoi, true);
 
+    bool leftEyeRoiValid = checkRect(leftEyeRoi, imgW, imgH);
+    bool rightEyeRoiValid = checkRect(rightEyeRoi, imgW, imgH);
+
     int modelH, modelW;
     irisLandmarker_impl->getInputWH(modelW, modelH);
 
     output.resize(2);
     IrisOutput& leftResult = output[0];
-    leftResult.eyeType = LEFT_EYE;
+    leftResult.eyeType = (leftEyeRoiValid) ? LEFT_EYE : INVALID_EYE;
     IrisOutput& rightResult = output[1];
-    rightResult.eyeType = RIGHT_EYE;
+    rightResult.eyeType = (rightEyeRoiValid) ? RIGHT_EYE : INVALID_EYE;
 
     // Processing left eye.
-    Mat leftEyeImg;
-    ImgScaleParams leftParams;
-    resizeUnscale(input(leftEyeRoi), leftEyeImg, modelW, modelH, leftParams);
+    if (leftEyeRoiValid)
+    {
+        Mat leftEyeImg;
+        ImgScaleParams leftParams;
+        resizeUnscale(input(leftEyeRoi), leftEyeImg, modelW, modelH, leftParams);
 
-    flip(leftEyeImg, leftEyeImg, 1); // flip for left eye
+        flip(leftEyeImg, leftEyeImg, 1); // flip for left eye
 
-    irisLandmarker_impl->run(leftEyeImg, leftResult.landmarkIris, leftResult.landmarkEye);
-    flipLandmark(modelW, leftResult.landmarkIris, leftResult.landmarkEye); // flip the eye and iris landmark back.
+        irisLandmarker_impl->run(leftEyeImg, leftResult.landmarkIris, leftResult.landmarkEye);
+        flipLandmark(modelW, leftResult.landmarkIris, leftResult.landmarkEye); // flip the eye and iris landmark back.
 
-    projectBackResizeUnscale(leftParams, imgW - 1, imgH - 1, leftEyeRoi, leftResult.landmarkIris, leftResult.landmarkEye);
+        projectBackResizeUnscale(leftParams, imgW - 1, imgH - 1, leftEyeRoi, leftResult.landmarkIris, leftResult.landmarkEye);
+    }
 
     // Processing right eye.
-    Mat rightEyeImg;
-    ImgScaleParams rightParams;
-    resizeUnscale(input(rightEyeRoi), rightEyeImg, modelW, modelH, rightParams);
-
-    imshow("rightEyeImg", rightEyeImg);
-    irisLandmarker_impl->run(rightEyeImg, rightResult.landmarkIris, rightResult.landmarkEye);
-    projectBackResizeUnscale(rightParams, imgW - 1, imgH - 1, rightEyeRoi, rightResult.landmarkIris, rightResult.landmarkEye);
+    if (rightEyeRoiValid)
+    {
+        Mat rightEyeImg;
+        ImgScaleParams rightParams;
+        resizeUnscale(input(rightEyeRoi), rightEyeImg, modelW, modelH, rightParams);
+            
+        irisLandmarker_impl->run(rightEyeImg, rightResult.landmarkIris, rightResult.landmarkEye);
+        projectBackResizeUnscale(rightParams, imgW - 1, imgH - 1, rightEyeRoi, rightResult.landmarkIris, rightResult.landmarkEye);
+    }
 }
 
 void IrisTracker::runVideo(const cv::Mat &input, std::vector<IrisOutput> &output)
@@ -147,40 +164,73 @@ void IrisTracker::runVideo(const cv::Mat &input, std::vector<IrisOutput> &output
     if (boxLandmark.size() != 1)
         return;
 
-    Rect2f leftEyeRoi = getRoiFromLandmarkBoundary(boxLandmark[0].points, imgH, imgW, left_eye_boundary_index);
-    Rect2f rightEyeRoi = getRoiFromLandmarkBoundary(boxLandmark[0].points, imgH, imgW, right_eye_boundary_index);
+    Rect2f leftEyeRoi = getRoiFromLandmarkBoundary(boxLandmark[0].points, imgW, imgH, left_eye_boundary_index);
+    Rect2f rightEyeRoi = getRoiFromLandmarkBoundary(boxLandmark[0].points, imgW, imgH, right_eye_boundary_index);
 
     leftEyeRoi = scaleRect(leftEyeRoi, imgW, imgH, scaleFactorEyeRoi, true);
     rightEyeRoi = scaleRect(rightEyeRoi, imgW, imgH, scaleFactorEyeRoi, true);
+
+    bool leftEyeRoiValid = checkRect(leftEyeRoi, imgW, imgH);
+    bool rightEyeRoiValid = checkRect(rightEyeRoi, imgW, imgH);
 
     int modelH, modelW;
     irisLandmarker_impl->getInputWH(modelW, modelH);
 
     output.resize(2);
     IrisOutput& leftResult = output[0];
-    leftResult.eyeType = LEFT_EYE;
+    leftResult.eyeType = (leftEyeRoiValid) ? LEFT_EYE : INVALID_EYE;
     IrisOutput& rightResult = output[1];
-    rightResult.eyeType = RIGHT_EYE;
+    rightResult.eyeType = (rightEyeRoiValid) ? RIGHT_EYE : INVALID_EYE;
 
     // Processing left eye.
-    Mat leftEyeImg;
-    ImgScaleParams leftParams;
-    resizeUnscale(input(leftEyeRoi), leftEyeImg, modelW, modelH, leftParams);
+    if (leftEyeRoiValid)
+    {
+        Mat leftEyeImg;
+        ImgScaleParams leftParams;
+        resizeUnscale(input(leftEyeRoi), leftEyeImg, modelW, modelH, leftParams);
 
-    flip(leftEyeImg, leftEyeImg, 1); // flip for left eye
+        flip(leftEyeImg, leftEyeImg, 1); // flip for left eye
 
-    irisLandmarker_impl->run(leftEyeImg, leftResult.landmarkIris, leftResult.landmarkEye);
-    flipLandmark(modelW, leftResult.landmarkIris, leftResult.landmarkEye); // flip the eye and iris landmark back.
+        PointList3f leftLandmarkIris, leftLandmarkEye;
+        irisLandmarker_impl->run(leftEyeImg, leftLandmarkIris, leftLandmarkEye);
+        flipLandmark(modelW, leftLandmarkIris, leftLandmarkEye); // flip the eye and iris landmark back.
 
-    projectBackResizeUnscale(leftParams, imgW - 1, imgH - 1, leftEyeRoi, leftResult.landmarkIris, leftResult.landmarkEye);
+        projectBackResizeUnscale(leftParams, imgW - 1, imgH - 1, leftEyeRoi, leftLandmarkIris, leftLandmarkEye);
+
+        // Add smoothing
+        leftEyeSmootherIris->apply(leftLandmarkIris, leftResult.landmarkIris);
+        leftEyeSmootherEye->apply(leftLandmarkEye, leftResult.landmarkEye);
+    }
+    else
+    {
+        // reset smoother
+        leftEyeSmootherIris->reset();
+        leftEyeSmootherEye->reset();
+    }
+
 
     // Processing right eye.
-    Mat rightEyeImg;
-    ImgScaleParams rightParams;
-    resizeUnscale(input(rightEyeRoi), rightEyeImg, modelW, modelH, rightParams);
+    if (rightEyeRoiValid)
+    {
+        Mat rightEyeImg;
+        ImgScaleParams rightParams;
+        resizeUnscale(input(rightEyeRoi), rightEyeImg, modelW, modelH, rightParams);
+        
+        PointList3f rightLandmarkIris, rightLandmarkEye;
+        irisLandmarker_impl->run(rightEyeImg, rightLandmarkIris, rightLandmarkEye);
+        projectBackResizeUnscale(rightParams, imgW - 1, imgH - 1, rightEyeRoi, rightLandmarkIris, rightLandmarkEye);
+        
+        rightEyeSmootherIris->apply(rightLandmarkIris, rightResult.landmarkIris);
+        rightEyeSmootherEye->apply(rightLandmarkEye, rightResult.landmarkEye);
+    }
+    else
+    {
+        rightEyeSmootherIris->reset();
+        rightEyeSmootherEye->reset();
+    }
 
-    irisLandmarker_impl->run(rightEyeImg, rightResult.landmarkIris, rightResult.landmarkEye);
-    projectBackResizeUnscale(rightParams, imgW - 1, imgH - 1, rightEyeRoi, rightResult.landmarkIris, rightResult.landmarkEye);
+    // save previous output
+    preOutput = output;
 }
 
 }

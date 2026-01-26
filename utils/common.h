@@ -25,11 +25,11 @@ namespace mpp
 #define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__))
 #define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__))
 // TODO, delete comment to print log.
-#elif 0 && (defined(__unix__) || defined(_WIN32) || defined(__APPLE__))
-#define LOGD(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
-#define LOGI(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
-#define LOGW(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
-#define LOGE(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
+// #elif (defined(__unix__) || defined(_WIN32) || defined(__APPLE__))
+// #define LOGD(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
+// #define LOGI(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
+// #define LOGW(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
+// #define LOGE(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
 #else
 #define LOGD(...);
 #define LOGI(...);
@@ -53,6 +53,10 @@ typedef std::vector<cv::Point2f> PointList2f;
 float normalizeRadius(float r);
 
 // resize image and keep its ratio.
+void resizeUnscale(const cv::Mat &mat, cv::Mat &mat_rs,
+                   int target_width, int target_height);
+
+// overload, add one more return of ImgScaleParams which keeps the scale ratio
 void resizeUnscale(const cv::Mat &mat, cv::Mat &mat_rs,
                    int target_width, int target_height, ImgScaleParams& params);
 

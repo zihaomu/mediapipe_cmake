@@ -27,27 +27,33 @@ void draw(const Mat& img, const std::vector<BoxKp2>& box)
     }
 }
 
+std::string ROOT_PATH = "/home/moo/work/my_lab/mpp_project/mediapiep_cmake_private";
+std::string DATA_PATH = ROOT_PATH + "/data";
+
 void test_image()
 {
-    string imgPath = "/Users/mzh/work/my_project/mediapipe_cmake/data/face_image/face0.jpg";
+    string imgPath = DATA_PATH + "/face_image/face.jpg";
     Mat img = imread(imgPath);
 
-    //    string modelPath = "/Users/mzh/work/my_project/mediapipe_cmake/face_detector/models/face_detection_short_range.mnn";
-    string modelPath = "/Users/mzh/work/my_project/mediapipe_cmake/face_detector/models/face_detection_full_range.tflite";
+    string modelPath = ROOT_PATH + "/face_detector/models/face_detection_short_range.mnn";
     FaceDetector detector(modelPath);
 
     std::vector<BoxKp2> boxOut = {};
     detector.run(img, boxOut);
 
     draw(img, boxOut);
+
+    // save result image
+    imwrite(DATA_PATH + "/face_image/face_result_output.jpg", img);
     imshow("img", img);
     waitKey(0);
+
+
 }
 
 void test_camera()
 {
-//    string modelPath = "/Users/mzh/work/my_project/mediapipe_cmake/face_detector/models/face_detection_short_range.mnn";
-    string modelPath = "/Users/mzh/work/my_project/mediapipe_cmake/face_detector/models/face_detection_full_range.mnn";
+    string modelPath = ROOT_PATH + "/face_detector/models/face_detection_full_range.mnn";
     FaceDetector detector(modelPath);
 
     VideoCapture cap(0);
@@ -75,6 +81,6 @@ void test_camera()
 
 int main()
 {
-//    test_image();
-    test_camera();
+   test_image();
+    // test_camera();
 }

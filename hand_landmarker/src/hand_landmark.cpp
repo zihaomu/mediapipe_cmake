@@ -52,14 +52,16 @@ void HandLandmarker::loadLandmarkModel(std::string landmark_path)
     handLanmark_impl = makePtr<HandLandmarker_Impl>(landmark_path, device);
 }
 
-void HandLandmarker::loadDetectModel(const char *buffer, long buffer_size)
+void HandLandmarker::loadDetectModel(const char *buffer, long buffer_size, std::string model_suffix)
 {
-    handDetector = makePtr<HandDetector>(buffer, buffer_size, maxHandNum, device);
+    CV_Assert(model_suffix == "mnn"); // 目前仅支持MNN
+    handDetector = makePtr<HandDetector>(buffer, buffer_size, model_suffix, maxHandNum, device);
 }
 
-void HandLandmarker::loadLandmarkModel(const char *buffer, long buffer_size)
+void HandLandmarker::loadLandmarkModel(const char *buffer, long buffer_size, std::string model_suffix)
 {
-    handLanmark_impl = makePtr<HandLandmarker_Impl>(buffer, buffer_size, device);
+    CV_Assert(model_suffix == "mnn"); // 目前仅支持MNN
+    handLanmark_impl = makePtr<HandLandmarker_Impl>(buffer, buffer_size, model_suffix, device);
 }
 
 HandLandmarker::~HandLandmarker()
@@ -147,8 +149,8 @@ void getRectFromHandLandmark(const BoxKp3& points, int imgW, int imgH, Point2f& 
     float width = (max_x - min_x) * imgW;
     float height = (max_y - min_y) * imgH;
 
-    // TODO fine-tuning the following params.
-    float expandRatio = 1.60f;
+    // TODO fine-tuning the following params. This param is sensitive to the final hand landmark result.
+    float expandRatio = 2.f;
     float shift_y = -0.25f;
     float longEdge = std::max(width, height) * expandRatio;
 
@@ -164,6 +166,7 @@ void getRectFromHandLandmark(const BoxKp3& points, int imgW, int imgH, Point2f& 
 // hand detector for each frame.
 void HandLandmarker::runTrack(const cv::Mat& img, std::vector<BoxKp2>& boxes, std::vector<float>& angles, std::vector<cv::Point2f>& palmCenters)
 {
+    // TODO: try to optimized the hand tracking strategy. Right now the effect is not good enough.
     if (preBoxPoints.size() >= maxHandNum) // get bounding box from pre landmark.
     {
         int preHandNum = preBoxPoints.size();
@@ -324,10 +327,20 @@ void HandLandmarker::runVideo(const cv::Mat &img, std::vector<BoxKp3> &boxLandma
         PointList3f landmark_pixel_out;
         projectLandmarkBack(landmark_pixel, img.cols, img.rows, tranMatInv, landmark_pixel_out);
 
+        PointList3f landmark_world_out;
+        projectLandmarkBack(landmark_world, img.cols, img.rows, tranMatInv, landmark_world_out);
+
+        // replace landmark_pixel_out z to scaled landmark_world_out z
+        for (int k = 0; k < landmark_world_out.size(); ++k)
+        {
+            landmark_pixel_out[k].z = landmark_world_out[k].z;
+        }
+
         BoxKp3 box = {};
         box.rect = boxes[i].rect;
         box.radians = angles[i];
         box.points = landmark_pixel_out;
+        // box.points_world = landmark_world_out;
         box.score = score_pixel;
 
         boxLandmark.push_back(box);

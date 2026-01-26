@@ -1,8 +1,6 @@
 #!/bin/bash
 
-NDK_PATH="/Users/moo/Library/Android/sdk/ndk/26.1.10909125"
-
-# NDK_PATH="/Users/mzh/Library/Android/sdk/ndk/25.2.9519653"
+NDK_PATH="/Android/sdk/ndk/26.1.10909125"  # set your NDK path here
 CMAKE_TOOLCHAIN_PATH="${NDK_PATH}/build/cmake/android.toolchain.cmake"
 
 cmake ../ \

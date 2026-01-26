@@ -30,8 +30,9 @@ FaceLandmarker_Impl::FaceLandmarker_Impl(std::string modelPath, int device)
     this->init();
 }
 
-FaceLandmarker_Impl::FaceLandmarker_Impl(const char* buffer, long buffer_size, int device)
+FaceLandmarker_Impl::FaceLandmarker_Impl(const char* buffer, long buffer_size, std::string model_suffix, int device)
 {
+    CV_Assert(model_suffix == "mnn");
     // Load MNN model by opencv from buffer.
     netFaceDet = makePtr<dnn::Net>(dnn::readNetFromMNN(buffer, buffer_size));
     this->init();
@@ -52,9 +53,19 @@ void FaceLandmarker_Impl::init()
 
     outputName = netFaceDet->getOutputName();
 
-    CV_Assert(outputName.size() == outputNameFromModel_468.size());
+    CV_Assert(outputName.size() == outputNameFromModel_468.size()
+              || outputName.size() == outputNameFromModel_478.size());
 
-    landmarkSize = 468;
+    if (outputName.size() == outputNameFromModel_468.size())
+    {
+        is478 = false;
+        landmarkSize = 468;
+    }
+    else
+    {
+        is478 = true;
+        landmarkSize = 478;
+    }
 }
 
 FaceLandmarker_Impl::~FaceLandmarker_Impl()
@@ -84,6 +95,43 @@ static float get_average_z(const std::vector<int>& index, PointList3f& landmark)
     return z_average / index.size();
 }
 
+void FaceLandmarker_Impl::refine_478_landmark(PointList3f &landmark, const float *lips,
+                                                              const float *left_eye, const float *left_iris,
+                                                              const float *right_eye, const float *right_iris)
+{
+    // 1. refine lips
+    for (int i = 0; i < faceIndex.lips_idxs_xy.size(); i++)
+    {
+        landmark[faceIndex.lips_idxs_xy[i]] = Point3f{lips[i * 2], lips[i * 2 + 1], landmark[faceIndex.lips_idxs_xy[i]].z};
+    }
+
+    // 2. refine left eye
+    for (int i = 0; i < faceIndex.left_eye_idxs_xy.size(); i++)
+    {
+        landmark[faceIndex.left_eye_idxs_xy[i]] = Point3f{left_eye[i * 2], left_eye[i * 2 + 1], landmark[faceIndex.left_eye_idxs_xy[i]].z};
+    }
+
+    // 3. refine left iris
+    float left_average_z = get_average_z(faceIndex.left_iris_z, landmark);
+    for (int i = 0; i < faceIndex.left_iris_xy.size(); i++)
+    {
+        landmark[faceIndex.left_iris_xy[i]] = Point3f{left_iris[i * 2], left_iris[i * 2 + 1], left_average_z};
+    }
+
+    // 4. refine right eye
+    for (int i = 0; i < faceIndex.right_eye_idxs_xy.size(); i++)
+    {
+        landmark[faceIndex.right_eye_idxs_xy[i]] = Point3f{right_eye[i * 2], right_eye[i * 2 + 1], landmark[faceIndex.right_eye_idxs_xy[i]].z};
+    }
+
+    // 5. refine right iris
+    float right_average_z = get_average_z(faceIndex.right_iris_z, landmark);
+    for (int i = 0; i < faceIndex.right_iris_xy.size(); i++)
+    {
+        landmark[faceIndex.right_iris_xy[i]] = Point3f{right_iris[i * 2], right_iris[i * 2 + 1], right_average_z};
+    }
+}
+
 void decodeLandmark(const float* p, int size, PointList3f& landmark)
 {
     landmark.clear();
@@ -103,6 +151,17 @@ void FaceLandmarker_Impl::run(const cv::Mat &img,
     
     std::vector<Mat> out;
 
+    if (is478) // 478 compute branch
+    {
+        netFaceDet->forward(out, outputNameFromModel_478);
+
+        CV_Assert(out.size() == outputNameFromModel_478.size());
+        landmark_score = out[0].at<float>(0, 0);
+        decodeLandmark((float*)out[4].data, landmarkSize, landmark);
+        refine_478_landmark(landmark, (float*)out[3].data, (float*)out[1].data, (float*)out[2].data,
+                            (float*)out[5].data, (float*)out[6].data);
+    }
+    else // 468 compute branch
     {
         netFaceDet->forward(out, outputNameFromModel_468);
         CV_Assert(out.size() == outputNameFromModel_468.size());

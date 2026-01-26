@@ -31,8 +31,9 @@ HandLandmarker_Impl::HandLandmarker_Impl(std::string modelPath, int device)
     this->init();
 }
 
-HandLandmarker_Impl::HandLandmarker_Impl(const char* buffer, long buffer_size, int device)
+HandLandmarker_Impl::HandLandmarker_Impl(const char* buffer, long buffer_size, std::string model_suffix, int device)
 {
+    CV_Assert(model_suffix == "mnn");
     // Load MNN model by opencv.
     netHandDet = makePtr<dnn::Net>(dnn::readNetFromMNN(buffer, buffer_size));
     this->init();

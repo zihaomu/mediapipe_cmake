@@ -32,7 +32,7 @@ class HandLandmarker_Impl
 public:
     HandLandmarker_Impl(std::string modelPath, int device = 0);
 
-    HandLandmarker_Impl(const char* buffer, long buffer_size, int device = 0);
+    HandLandmarker_Impl(const char* buffer, long buffer_size, std::string model_suffix, int device = 0);
     ~HandLandmarker_Impl();
 
     /// run the hand landmarker with given croped input image.

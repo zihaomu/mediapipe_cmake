@@ -9,6 +9,7 @@ include_directories(
         ${CMAKE_SOURCE_DIR}/face_detector/include
         ${SUB_DIR}/include
         ${SUB_DIR}/src
+        ${SUB_DIR}/3rdparty/eigen-3.4.0
         ${CMAKE_SOURCE_DIR}/utils
 )
 

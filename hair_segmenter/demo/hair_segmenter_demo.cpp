@@ -12,11 +12,10 @@ using namespace cv;
 
 void test_image()
 {
-    string imgPath = "/Users/moo/work/my_project/mediapipe_cmake2/mediapipe_cmake/data/face_image/face0.jpg";
+    string imgPath = "../data/face_image/face0.jpg";
     Mat img = imread(imgPath);
 
-    //    string modelPath = "/Users/mzh/work/my_project/mediapipe_cmake/face_detector/models/face_detection_short_range.mnn";
-    string modelPath = "/Users/moo/work/my_project/mediapipe_cmake2/mediapipe_cmake/hair_segmenter/models/hair_segmentation.tflite";
+    string modelPath = "../hair_segmenter/models/hair_segmentation.tflite";
     HairSegmenter detector(modelPath);
 
     Mat out;
@@ -34,8 +33,7 @@ void test_image()
 
 void test_camera()
 {
-    //    string modelPath = "/Users/mzh/work/my_project/mediapipe_cmake/face_detector/models/face_detection_short_range.mnn";
-    string modelPath = "/Users/moo/work/my_project/mediapipe_cmake2/mediapipe_cmake/hair_segmenter/models/hair_segmentation.tflite";
+    string modelPath = "../hair_segmenter/models/hair_segmentation.tflite";
     HairSegmenter detector(modelPath);
 
     Mat frame;
@@ -68,8 +66,8 @@ void test_camera()
 
 int main()
 {
-//    test_image();
-    test_camera();
+   test_image();
+    // test_camera();
 
     return 0;
 }

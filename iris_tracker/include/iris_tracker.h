@@ -27,6 +27,7 @@ namespace mpp
 {
 enum EYE_TYPE
 {
+    INVALID_EYE = -1, // Unknown eye type means data is invalid.
     LEFT_EYE = 0,
     RIGHT_EYE = 1,
 };
@@ -65,6 +66,8 @@ public:
     class IrisLandmarker_Impl;
 
 private:
+    void postProcess(const cv::Mat& eyeImg, std::vector<IrisOutput>& output);
+
     int device;
     cv::Ptr<IrisLandmarker_Impl> irisLandmarker_impl = nullptr;
     cv::Ptr<FaceLandmarker> faceLandmarker = nullptr;
@@ -74,6 +77,12 @@ private:
     const std::vector<int> left_eye_boundary_index = {362, 263};
     const std::vector<int> right_eye_boundary_index = {33, 133};
     const float scaleFactorEyeRoi = 2.3;  // to scale the eye roi.
+
+    cv::Ptr<OneEuroSmoother> leftEyeSmootherIris; // only use in video mode.
+    cv::Ptr<OneEuroSmoother> leftEyeSmootherEye; // only use in video mode.
+    cv::Ptr<OneEuroSmoother> rightEyeSmootherIris; // only use in video mode.
+    cv::Ptr<OneEuroSmoother> rightEyeSmootherEye; // only use in video mode.
+    std::vector<IrisOutput> preOutput;
 };
 
 }

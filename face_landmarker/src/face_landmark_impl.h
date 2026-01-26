@@ -132,7 +132,7 @@ class FaceLandmarker_Impl
 {
 public:
     FaceLandmarker_Impl(std::string modelPath, int device = 0);
-    FaceLandmarker_Impl(const char* buffer, long buffer_size, int device = 0);
+    FaceLandmarker_Impl(const char* buffer, long buffer_size, std::string model_suffix, int device = 0);
     ~FaceLandmarker_Impl();
 
     void run(const cv::Mat& img, PointList3f& landmark, float& landmark_score);
@@ -143,6 +143,7 @@ public:
 private:
     void init();
 
+    bool is478 = false; // 468 or 478.
     int landmarkSize = 468;
     FaceLandmarkIndex faceIndex;
     cv::Scalar mean;
@@ -152,9 +153,16 @@ private:
     std::vector<std::vector<int> > inputShape;
     std::vector<std::string> outputName;
 
+    void refine_478_landmark(PointList3f& landmark, const float * lips, const float * left_eye, const float * left_iris,
+                           const float * right_eye, const float * right_iris);
+
     // 1x1x1x1404, 1x1x1x1
     std::vector<std::string> outputNameFromModel_468 = {"conv2d_21", "conv2d_31"};
 
+    // 1x1x1x1, 1x1x1x142, 1x1x1x10, 1x1x1x168, 1x1x1x1404, 1x1x1x142, 1x1x1x10
+    std::vector<std::string> outputNameFromModel_478 = {"conv_faceflag", "output_left_eye", "output_left_iris",
+                                                        "output_lips", "output_mesh_identity", "output_right_eye",
+                                                        "output_right_iris"};
     cv::Ptr<cv::dnn::Net> netFaceDet = nullptr;
 };
 

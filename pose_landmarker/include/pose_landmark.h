@@ -85,10 +85,10 @@ public:
     PoseLandmarker(int maxHumanNum, int device = 0);
 
     void loadDetectModel(std::string detector_path, int device = 0);
-    void loadDetectModel(const char* buffer, long buffer_size, bool isTFlite, int device = 0);
+    void loadDetectModel(const char* buffer, long buffer_size, std::string model_suffix, int device = 0);
 
     void loadLandmarkModel(std::string landmark_path, int device = 0);
-    void loadLandmarkModel(const char* buffer, long buffer_size, bool isTFlite, int device = 0);
+    void loadLandmarkModel(const char* buffer, long buffer_size, std::string model_suffix, int device = 0);
 
     ~PoseLandmarker();
 
@@ -134,7 +134,8 @@ private:
     // TODO check the threshold by mediapipe.
     float threshold = 0.5f;
 
-    cv::Ptr<OneEuroSmoother> smoother; // only use in video mode.
+    cv::Ptr<OneEuroSmoother> smoother_xy; // only use in video mode.
+    cv::Ptr<OneEuroSmoother> smoother_z; // only use in video mode.
     std::vector<BoxKp3> preBoxPoints;
     cv::Ptr<PoseLandmarker_Impl> poseLanmark_impl = nullptr;
     cv::Ptr<PoseDetector> poseDetector = nullptr;

@@ -10,13 +10,13 @@ using namespace std;
 using namespace mpp;
 using namespace cv;
 
+
+
 void test_image()
 {
-    string imgPath = "/Users/moo/work/my_project/mediapipe_cmake2/mediapipe_cmake/data/face_image/face0.jpg";
+    string imgPath = "../data/face_image/face0.jpg";
     Mat img = imread(imgPath);
-
-    //    string modelPath = "/Users/mzh/work/my_project/mediapipe_cmake/face_detector/models/face_detection_short_range.mnn";
-    string modelPath = "/Users/moo/work/my_project/mediapipe_cmake2/mediapipe_cmake/selfie_segmenter/models/selfie_segmentation.tflite";
+    string modelPath = "../selfie_segmenter/models/selfie_segmentation.tflite";
     SelfieSegmenter detector(modelPath);
 
     Mat outMask;
@@ -29,8 +29,7 @@ void test_image()
 
 void test_camera()
 {
-    //    string modelPath = "/Users/mzh/work/my_project/mediapipe_cmake/face_detector/models/face_detection_short_range.mnn";
-    string modelPath = "/Users/moo/work/my_project/mediapipe_cmake2/mediapipe_cmake/selfie_segmenter/models/selfie_segmentation.tflite";
+    string modelPath = "../selfie_segmenter/models/selfie_segmentation.tflite";
     SelfieSegmenter detector(modelPath);
 
     Mat frame;
